@@ -77,7 +77,6 @@ export const App = () => {
         })
         return response.json()
     }
-    
      function fetchTaskBoard(savedId){
         
          fetch(`http://localhost:3000/${savedId}`, {
@@ -118,7 +117,7 @@ export const App = () => {
     return (
         <div className="">
         {taskBoard.name}
-        
+
         </div>
     )
 
