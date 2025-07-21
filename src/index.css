@@ -1,14 +1,14 @@
 @import 'tailwindcss';
 
 :root{
-    --yellow: hsl(47, 88%, 68%);
-    --orange: hsl(36, 80%, 57%);
+    --warm-orange: hsl(36, 80%, 57%);
+    --warm-yellow: hsl(47, 88%, 68%);
     --light-orange: hsl(36, 62%, 90%);
-    --green: hsl(134, 67%, 52%);
+    --warm-green: hsl(134, 67%, 52%);
     --light-green: hsl(133, 67%, 78%);
-    --red: hsl(2, 68%, 58%);
+    --warm-red: hsl(2, 68%, 58%);
     --light-red: hsl(2, 69%, 90%);
-    --grey: hsl(215, 27%, 91%);
+    --light-grey: hsl(215, 27%, 91%);
 }
 
 body{
@@ -18,9 +18,15 @@ body{
     height: 100vh;
 }
 
-
+button, label{
+    cursor: pointer;
+}
 .icon{
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+form > label, span {
+    color: #00000033;
 }
