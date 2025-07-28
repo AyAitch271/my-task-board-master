@@ -58,17 +58,12 @@ export const App = () => {
             fetchTaskBoard(cleanSevedId)
 
         } else {
-            mutation.mutate({
-                id: nanoid(),
-                name: defaultTaskBoard.name,
-                desc: defaultTaskBoard.desc,
-                tasks: defaultTaskBoard.tasks
-            })
+            mutation.mutate(defaultTaskBoard)
         }
     }, [])
 
     function createNewTaskBoard() {
-        const response = fetch('http://localhost:3000/', {
+       return  fetch('http://localhost:3000/', {
             method: 'post',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -77,8 +72,7 @@ export const App = () => {
                 desc: defaultTaskBoard.desc,
                 tasks: defaultTaskBoard.tasks
             })
-        })
-        return response.json()
+        }).then(response => response.json())
     }
     function fetchTaskBoard(savedId) {
 
@@ -99,10 +93,11 @@ export const App = () => {
             console.error(error)
         }
     }
+
     const mutation = useMutation({
-        mutationFn: createNewTaskBoard,
-        onSuccess: (taskBoard) => {
-            setValueInLocalStorage('board-id', taskBoard.id)
+        mutationFn:  createNewTaskBoard,
+        onSuccess: (data) => {
+        setValueInLocalStorage('board-id', data.id)
         },
         onError: (error) => console.error(error)
     })
@@ -148,7 +143,6 @@ export const App = () => {
     const showEditForm = (task) => {
         editFormRef.current.showModal()
         setEditedTask(task)
-        console.log(editedTask)
     }
 
     const onTaskChange = (e) => {
@@ -157,17 +151,70 @@ export const App = () => {
             ...prev, 
             [e.target.name]: e.target.value}
         })
-        console.log(editedTask)
     }
 
+    const updateTask = (editedTask) => {
+        fetch(`http://localhost:3000/tasks/${editedTask.taskId}`,{
+            method: 'put',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                editedTask: editedTask
+            })
+            
+        })
+        window.location.reload()
+    }
+
+    const mutateUpdateTask = useMutation({
+        mutationFn: (editedTask) => updateTask(editedTask),
+        onSuccess: (data) => console.log(data),
+        onError: (error) => console.log(error)
+
+    })
+
+    const deleteTask= (editedTask) => {
+        console.log(editedTask)
+            fetch(`http://localhost:3000/tasks/${editedTask.taskId}`, {
+                method: 'delete',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    boardId: taskBoard.id
+                })
+            })
+            
+    }
+
+    const mutateDelete = useMutation({
+        mutationFn: (editedTask) => deleteTask(editedTask),
+        onError: (error) => console.log(error)
+    })
+
+    const createTask = (newTask) => {
+      return fetch(`http://localhost:3000/tasks`,{
+            method: 'post',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                newTask
+            })
+        }).then(response => response.json()).then(newTask => showEditForm(newTask))
+    }
+
+
+    const mutateCreateTask = useMutation({
+        mutationFn: (newTask) => createTask(newTask),
+        onError: (error) => console.log('error',error),
+    })
+
+    console.log(editedTask)
+
     return (
-        <div className="">
+        <div className="w-full max-h-[80%]">
             <h1 className="text-4xl mb-3">{taskBoard.name}</h1>
             <p className="mb-8" >{taskBoard.desc}</p>
-            <div className="tasks flex gap-4  flex-col">
+            <div className="tasks max-h-1/2 flex gap-4  flex-col w-full overflow-scroll">
                 {taskBoard.tasks?.map((task) => {
-                    return (<button onClick={() => showEditForm(task)} style={{ backgroundColor: `var(--${taskStatuses[task.taskStatus].column_bg})` }} className={`cursor-pointer flex grow-1 rounded-2xl items-center justify-between p-3`} key={task.taskId}>
-                        <div className="task-emoji bg-[#fff] p-2.5 rounded-xl w-8 h-8 flex items-center justify-center mr-3.5">{task.taskEmoji}</div>
+                    return (<button onClick={() => showEditForm(task)} style={{ backgroundColor: `var(--${taskStatuses[task.taskStatus].column_bg})` }} className={`cursor-pointer flex rounded-2xl items-center justify-between p-3`} key={task.taskId}>
+                        <div className={`task-emoji bg-[${task.taskEmoji ? '#fff' :'transparent'}] p-2.5 rounded-xl w-8 h-8 flex items-center justify-center mr-3.5`}>{task.taskEmoji}</div>
                         <div className="task-info m-0 mr-auto">
                             <h2 className=" text-left task-name text-lg font-semibold">{task.taskName}</h2>
                             <p className="task-description font-light">{task.taskDesc}</p>
@@ -178,7 +225,13 @@ export const App = () => {
                     </button>)
                 })}
 
-                <button className=" flex items-center justify-center px-3 font-bold bg-[var(--light-orange)] rounded-2xl">
+                <button onClick={() => mutateCreateTask.mutate(
+                    {
+                        boardId: taskBoard.id,
+                        taskId: nanoid(),
+                        taskName: 'new task',
+
+                    }) } className=" flex items-center justify-center px-3 font-bold bg-[var(--light-orange)] rounded-2xl">
                     <div className="p-2.5 bg-[var(--warm-orange)] rounded-md   ">
                         <img src="../resources/Add_round_duotone.svg" alt="" />
                     </div>
@@ -195,16 +248,16 @@ export const App = () => {
                 </button>
                 </div>
                 <label htmlFor="taskName">Task name</label>
-                <input onChange={(e) => onTaskChange(e)} className="rounded-sm px-2 py-1 border-2 border-[var(--light-grey)]" value={editedTask.taskName} type="text" id="taskName" name="taskName" />
+                <input maxLength={45} onChange={(e) => onTaskChange(e)} className="rounded-sm px-2 py-1 border-2 border-[var(--light-grey)]" value={editedTask.taskName} type="text" id="taskName" name="taskName" />
                 <label htmlFor="taskDesc">Description</label>
-                <textarea onChange={(e) => onTaskChange(e)} className="rounded-sm px-2 py-1 border-2 border-[var(--light-grey)]" value={editedTask.taskDesc} name="taskDesc" id="taskDesc" placeholder="Enter a short description"></textarea>
+                <textarea maxLength={255} onChange={(e) => onTaskChange(e)} className="rounded-sm px-2 py-1 border-2 border-[var(--light-grey)]" value={editedTask.taskDesc} name="taskDesc" id="taskDesc" placeholder="Enter a short description"></textarea>
                 <fieldset className="taskIcons">
                     <legend>Icon</legend>
                     <div className="flex gap-2 items-center">
                         {taskIcons.map((icon, index) => {
                             return (
                                 <Fragment key={icon}>
-                                    <input onChange={(e) => onTaskChange(e)} hidden type="radio" name="taskIcon" id={`icon-${index}`} />
+                                    <input onClick={(e) => onTaskChange(e)} hidden type="radio" value={icon} name="taskEmoji" id={`icon-${index}`} />
                                     <label className={`icon w-10 h-10 text-2xl bg-${ icon === editedTask.taskEmoji ? '[var(--warm-orange)]': '[var(--light-grey)]'} rounded-md`} htmlFor={`icon-${index}`}>{icon}</label>
                                 </Fragment>
                             )
@@ -220,21 +273,29 @@ export const App = () => {
                                 <div className="icon mr-3 p-2 rounded-sm" style={{ backgroundColor: `var(--${values.status_icon_bg})` }}>
                                     <img src={values.status_icon} alt="" />
                                 </div>
-                                <input onClick={(e) => onTaskChange(e)}  hidden type="radio" name="taskStatus" value={values.value} id={keys} />
-                                <label aria-label={values.value} value={values.value} htmlFor={keys}>{values.value}</label>
+                                <input onClick={(e) => onTaskChange(e)}  hidden type="radio" name="taskStatus" value={keys} id={keys} />
+                                <label aria-label={values.value} value={keys} htmlFor={keys}>{values.value}</label>
                                 </div>
                             )
                         })}
                     </div>
                 </fieldset>
                 <div className="buttons flex justify-end gap-3 text-white text-right">
-                    <button className=" icon gap-1.5 bg-gray-400 rounded-3xl px-6 py-1.5">
+                    <button onClick={(e) => {
+                        e.preventDefault()
+                        mutateDelete.mutate(editedTask)
+                    }} className=" icon gap-1.5 bg-gray-400 rounded-3xl px-6 py-1.5">
                         <p>
                         Delete
                         </p>
                         <img src="../resources/Trash.svg" alt="" srcset="" />
                     </button>
-                    <button className="icon gap-1.5 bg-blue-600 rounded-3xl px-6 py-1.5">
+                    <button onClick={(e) => {
+                        e.preventDefault()
+                        mutateUpdateTask.mutate(editedTask)
+                        editFormRef.current.close()
+                    }} className="icon gap-1.5 bg-blue-600 rounded-3xl px-6 py-1.5">
+
                         <p>Save</p>
                         <img src="../resources/Done_round.svg" alt="" srcset="" />
                         </button>
@@ -245,8 +306,3 @@ export const App = () => {
     )
 
 }
-{/* <div className="">
-<div className="w-5 h-5" style={{backgroundColor: `var(--${taskStatuses[status].status_icon_bg})`}}>
-    <img src={taskStatuses[status].status_icon} alt="" />
-</div>
-</div> */}
