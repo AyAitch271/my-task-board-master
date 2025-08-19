@@ -6,3 +6,4 @@
 .DS_Store
 .prettierignore
 
+node_modules/@eslint/plugin-kit/README.md
