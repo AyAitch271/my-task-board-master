@@ -12,13 +12,12 @@ const router = createBrowserRouter([
   {
   path: '/',
   element: <App/>,
-  children: [
-    {
-    path: ':boardId',
+  },
+  {
+    path: '/:board-id',
     element: <TaskBoard/>
   }
-]
-  },
+
 ])
 
 createRoot(document.getElementById('root')).render(
